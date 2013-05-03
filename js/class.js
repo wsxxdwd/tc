@@ -45,15 +45,15 @@ function MapCanvas(){
 			markArray[markId].setMap(null);
 	};
 	//建立贸易点连线
-	this.setLine = function(lineId,way,type){
+	this.setLine = function(lineId,from,to,type){
 		if(type == 0){
 			color = '#00FF00';
 		}else if(type == 1){
 			color = '#FF0000';
 		}
 		var tradeline = [
-			TPList[way[0]].position,
-			TPList[way[1]].position
+			TPList[from].position,
+			TPList[to].position
 		];
 		var tl = new google.maps.Polyline({
 			map:this.map,
@@ -221,11 +221,12 @@ function Resource(id,type,position){
 	this.type = type;
 	this.item = Items[type];
 }
-function tradeLine(id,way,belong){
+function TradeLine(id,from,to,item,belong){
 	this.id = id;
-	this.way = way;
+	this.from = from;
+	this.to = to;
 	this.belong = belong;
-	this.item;
+	this.item = item;
 }
 //物品对象
 function Item(name,price,min,max,grad,num,record){

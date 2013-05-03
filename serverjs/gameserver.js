@@ -69,11 +69,12 @@ function Game(){
 			
 			/*看毛看,这就是个临时清空数据库的东西
 			db.updateRP('',{$set:{Pos:{jb:30.590886,kb:114.3110360001106}}},{multi: true},function(res){console.log(res);});
-			db.delUser({username:'Tom'});
+			db.delUser({name:'wang'});
 			db.updateTP({output:[14]},{$set:{output:[13]}},{multi: true},function(res){console.log(res);});
-			db.updateUser({name:'diwang'},{$set:{money:9999}},{multi: true},function(res){console.log(res);});
+			db.updateUser({name:'diwang'},{$set:{temp:[]}},{multi: true},function(res){console.log(res);});
 			db.addRP(0,)
 			db.delTP('');
+			db.delTL('');
 			*/
 			//输出当前的贸易点与玩家,测试用
 			db.findUser('',function(docs){
@@ -82,6 +83,9 @@ function Game(){
 			db.findTP('',function(docs){
 				console.log(docs);
 			}); 
+			db.findTL('',function(docs){
+				console.log(docs);
+			});
 			db.findRP('',function(docs){
 				console.log(docs);
 			});
@@ -97,17 +101,17 @@ function Game(){
 				});
 			}); 
 			socket.on('setRP',function(data){
-				db.addRP(0,data.location,function(RPid){
+				db.addRP(rd(Items.length-1),data.location,function(RPid){
 					socket.emit('RPId',{id:RPid});
 				});
 			}); 
 			socket.on('setTLStart',function(data){
-				db.updateUser({_id:data.id},{$set:{tempTL:data.temp}},'',function(){});
+				db.updateUser({_id:data.id},{$set:{temp:data.temp}},'',function(){});
 			});
 			socket.on('setTLEnd',function(data){
 				db.findUser({_id:data.id},function(user){
-					var temp = user[0].tempTL;
-					db.addTL(user[0]._id,temp[0],temp[1],data.to,data.dis,data.dis*200,function(TLid){
+					var temp = user[0].temp;
+					db.addTL(user[0]._id,temp[1],temp[0],data.to,data.dis,data.dis*200,function(TLid){
 						socket.emit('TLId',{id:TLid});
 					});
 				});
@@ -157,7 +161,7 @@ function Game(){
 							var belong;
 							for(var i = 0;i<TLList.length;i++){
 								TLList[i].keeper == data.id?belong = 0:belong = 1;
-								TPs.push([TLList[i]._id,[TLList[i].from,TLList[i].to],belong])	
+								TLs.push([TLList[i]._id,[TLList[i].from,TLList[i].to],TLList[i].item,belong])	
 							}
 							socket.emit("TLList",{list:TLs});
 						});
@@ -200,7 +204,7 @@ function login(socket,data){
 	db.findUser({name:data.username},function(userMsg){
 		if(userMsg == 0){
 			//用户名不存在,注册
-			db.signIn(data.username,data.password,function(userMsg){
+			db.signIn(data.username,data.password,Items,function(userMsg){
 				socket.emit("loginMsg",{type:'register',user:userMsg});	
 				console.log('a player registers');
 			});

@@ -61,10 +61,10 @@ var ResourcePoint = mongoose.model('RP',rp);
 
 //===============================玩家相关========================
 //玩家注册
-exports.signIn = function(username,password,callback){
+exports.signIn = function(username,password,Items,callback){
 	//实例化一个玩家并加入数据库
 	var temp = new Array();
-	for(var i = 0;i<15;i++)
+	for(var i = 0;i<Items.length;i++)
 		temp.push([0,0,0]);
 	var newUser = new User({name:username,psw:password,money:500,items:temp});
 	newUser.save(function (err,docs) {

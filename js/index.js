@@ -29,6 +29,9 @@ window.onload = function(){
 		$('#tradePoint').fadeIn(300);
 	});
 	$('#setTP').bind('click',function(){
+		setNewTP();
+	});
+	$('#setRP').bind('click',function(){
 		setNewRP();
 	});
 	//gameInit('adivon',0);
@@ -90,6 +93,7 @@ function gameListener(){
 	});
 	socket.on('TLId',function(data){
 		var tradeLine = new TradeLine(data.id,player.tempTL,0);
+		player.tempTL.length = 0;
 		TLList[data.id] = tradePoint;
 		//地图上标记出来贸易线路
 		gameMap.setLine(data.id,tempTL,0);
@@ -120,11 +124,13 @@ function gameInit(user){
 	$("#screen").css("display","block");
 	//地图mark数组
 	markArray = new Array();
+	lineArray = new Array();
 	//游戏地图
 	gameMap   = new MapCanvas();
 	//玩家
 	var items = makeItems(user.items);
 	player    = new Player(user.name,user._id,user.money,items,user.TPs,user.record,user.TLs,user.army,user.temp);
+	
 	//刷新管理信息
 	player.manageChg(1,1,1,1);
 	//临时交易记录
@@ -196,8 +202,8 @@ function showTradeInfo(type,id,name,items,money){
 		for(var i = 0;i<items.length;i++){
 			if(items[i].num != 0){
 				goods +=' <tr id="item'+i+'"><td>'+items[i].name+'</td><td>'+items[i].num+'</td><td>'+items[i].price+'</td></tr>';	
-				$("#item"+i).die();
-				$("#item"+i).live('click',dotrade(i));
+				$("#goods #item"+i).die();
+				$("#goods #item"+i).live('click',dotrade(i));
 			}
 			function dotrade(a){
 				return function(){
@@ -221,8 +227,8 @@ function showTradeInfo(type,id,name,items,money){
 		for(var i = 0;i<player.items.length;i++){
 			if(player.items[i].num != 0){
 				goods +=' <tr id="item'+i+'"><td>'+player.items[i].name+'</td><td>'+player.items[i].num+'</td><td>'+Math.round(items[i].price*0.8)+'</td></tr>';	
-				$("#item"+i).die();
-				$("#item"+i).live('click',dotrade(i));
+				$("#goods #item"+i).die();
+				$("#goods #item"+i).live('click',dotrade(i));
 			}
 			function dotrade(a){
 				return function(){
@@ -235,22 +241,26 @@ function showTradeInfo(type,id,name,items,money){
 		$('#tradePoint #goods').html(goods);
 	}
 	//贸易线路设置
-	if(TLList.length == 0)
-		showSetTL();	
-	for(i in TLList){
-		if(TLList[i].belong == 0&&(TLList[i].from == id||TLList[i].from == id)){
-			showCloseTL(i);
-		}else{
-			showSetTL();
-		}
+	if(TLList == []&&(player.tempTL[0] != id||player.tempTL.length == 0)){
+		showSetTL();
 	}
+	else if(player.tempTL[0] == id)
+		$('#tradePoint #tradeLine').html("已设立贸易型线路起点,护卫:XX,贸易品:"+Items[player.tempTL[1]].name);
+	else
+		for(i in TLList){
+			if(TLList[i].belong == 0&&(TLList[i].from == id||TLList[i].to == id)){
+				showCloseTL(i);
+			}else{
+				showSetTL();
+			}
+		}
 	function showCloseTL(id){
-		var TLInfo = "当前贸易点设有您的贸易线路.\n";
-		TLInfo += "贸易线路在"+TPList[TLList[id].way[0]].lord+"的贸易点与"+TPList[TLList[id].way[1]].lord+"的贸易点之间.\n";
+		var TLInfo = "<p>当前贸易点设有您的贸易线路.</p>";
+		TLInfo += "<p>贸易线路建立在"+TPList[TLList[id].from].lord+"的贸易点与"+TPList[TLList[id].to].lord+"的贸易点之间.</p>";
 		if(typeof(TLList[id].item) != "undefined"){
-			TLInfo += "此贸易线路正由XXX带领着进行着"+Items[TLList[id].item].name+"的贸易.\n";
+			TLInfo += "<p>此贸易线路正由XXX带领着进行着"+Items[TLList[id].item].name+"的贸易.</p>";
 		}else{
-			TLInfo += "此贸易点暂时没有进行贸易.\n";
+			TLInfo += "<p>此贸易点暂时没有进行贸易.</p>";
 		}
 		TLInfo += '<button type="button" id="closeTL"class="btn btn-danger" data-loading-text="正在关闭...">关闭贸易线路</button>';
 		$('#tradePoint #tradeLine').html(TLInfo);
@@ -258,7 +268,7 @@ function showTradeInfo(type,id,name,items,money){
 		$('#closeTL').bind('click',function(){return closeTL()});
 	}
 	function showSetTL(){
-		var TLInfo = "当前贸易点您未设立贸易线路.\n";
+		var TLInfo = "<p>当前贸易点您未设立贸易线路.<\p>";
 		if(player.tempTL.length == 0){
 			TLInfo += '<button type="button" id="setTLStart" class="btn btn btn-success" data-loading-text="正在设立...">设立贸易线路起始点</button>';
 			$('#tradePoint #tradeLine').html(TLInfo);
@@ -268,10 +278,10 @@ function showTradeInfo(type,id,name,items,money){
 			TLInfo += '<button type="button" id="setTLEnd" class="btn btn btn-success" data-loading-text="正在设立...">设立贸易线路终点</button>';
 			$('#tradePoint #tradeLine').html(TLInfo);
 			$('#setTLEnd').die();
-			$('#setTLEnd').bind('click',function(){return setTLEnd()});
+			$('#setTLEnd').bind('click',function(){return setTLEnd(id)});
 		}
 		function TLStart(){
-			TLInfo = "选择商队护卫";
+			TLInfo = "<p>选择商队护卫</p>";
 			TLInfo += '<button class="btn btn-primary" id="confirmGuard" type="button">确认</button>';
 			$('#tradePoint #tradeLine').html(TLInfo);
 			$('#confirmGuard').die();
@@ -282,19 +292,19 @@ function showTradeInfo(type,id,name,items,money){
 					if(items[i].num != 0){
 						TLInfo +=' <tr id="item'+i+'"><td>'+items[i].name+'</td><td>'+items[i].num+'</td><td>'+items[i].price+'</td></tr>';	
 						$('#tradePoint #tradeLine').html(TLInfo);
-						$("#item"+i).die();
-						$("#item"+i).live('click',function(i){
+						$("#tradeLine #item"+i).die();
+						$("#tradeLine #item"+i).live('click',TLStart(i));
+						function TLStart(i){
 							return function(){
 								setTLStart(id,i);
+								TLInfo = "<p>已设立贸易型线路起点,护卫:XX,贸易品:"+Items[i].name+"</p>";
+								$('#tradePoint #tradeLine').html(TLInfo);
 							}
-						});
+						}
 					}
 				}
 				TLInfo +='</tbody></table>';
 			});
-		}
-		function TLEnd(){
-			setTLEnd(id);
 		}
 	}
 }
@@ -339,28 +349,25 @@ function loadRP(){
 //=============================贸易线路相关========================
 //设立贸易线路
 function setTLStart(TPId,item){
-alert('xz');
 	player.tempTL.push(TPId,item);
-	if(player.tempTL.length == 0){
-		socket.emit('setTLStart',{id:player.id,temp:player.tempTL});
-	}else{
-		alert('xz');
-	}
+	socket.emit('setTLStart',{id:player.id,temp:player.tempTL});
 }
 function setTLEnd(TPId){
 	player.tempTL.push(TPId);
-	var distance = distance(TPList[player.tempTL[0]],TPList[player.tempTL[2]]);
-	socket.emit('setTLEnd',{id:player.id,to:player.tempTL[2],dis:distance});
-	player.tempTL.length = 0;
+	var dis = distance(TPList[player.tempTL[0]].position,TPList[player.tempTL[2]].position);
+	socket.emit('setTLEnd',{id:player.id,to:player.tempTL[2],dis:dis});
+	$('#tradePoint #tradeLine').html('<p>已建立贸易线路</p><button type="button" id="closeTL"class="btn btn-danger" data-loading-text="正在关闭...">关闭贸易线路</button>');
+	$('#closeTL').die();
+	$('#closeTL').bind('click',function(){return closeTL()});
 }
 function loadTL(){
 	socket.emit('query',{type:'TLList',id:player.id});
 	socket.on('TLList',function(data){
 		for(var i=0;i<data.list.length;i++){
-			var tradeLine = new TradeLine(data.list[i][0],data.list[i][1],data.list[i][2]); 
-			gameMap.setLine(tradeLine.id,tradeLine.way,tradeLine.belong);
+			var tradeLine = new TradeLine(data.list[i][0],data.list[i][1][0],data.list[i][1][1],data.list[i][2],data.list[i][3]); 
+			gameMap.setLine(tradeLine.id,tradeLine.from,tradeLine.to,tradeLine.belong);
 			//贸易线路列表,和上面那个有区别,存了所有贸易线路信息
-			RPList[tradeLine.id] = tradeLine;
+			TLList[tradeLine.id] = tradeLine;
 		}
 	});
 }
@@ -368,7 +375,7 @@ function loadTL(){
 function makeItems(items){
 	var temp = new Array();
 	extend(temp,Items);
-	for(var i = 0;i<items.length;i++){
+	for(var i in items){
 		temp[i].price = items[i][0];
 		temp[i].num = items[i][1];
 		temp[i].record = items[i][2];
